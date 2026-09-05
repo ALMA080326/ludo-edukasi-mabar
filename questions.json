@@ -1,0 +1,77 @@
+[
+  {
+    "text": "Proses memecah masalah besar menjadi bagian-bagian kecil yang lebih mudah diselesaikan disebut?",
+    "options": ["Dekomposisi", "Abstraksi", "Rekursi", "Enkripsi"],
+    "correctIndex": 0
+  },
+  {
+    "text": "Mengabaikan detail yang tidak penting dan fokus pada informasi inti disebut?",
+    "options": ["Dekomposisi", "Abstraksi", "Iterasi", "Debugging"],
+    "correctIndex": 1
+  },
+  {
+    "text": "Mengenali pola yang berulang untuk mempermudah penyelesaian masalah disebut?",
+    "options": ["Pengenalan pola", "Enkripsi", "Kompilasi", "Sintaksis"],
+    "correctIndex": 0
+  },
+  {
+    "text": "Langkah-langkah logis dan berurutan untuk menyelesaikan suatu masalah disebut?",
+    "options": ["Algoritma", "Variabel", "Database", "Interface"],
+    "correctIndex": 0
+  },
+  {
+    "text": "Proses menemukan dan memperbaiki kesalahan pada program disebut?",
+    "options": ["Debugging", "Formatting", "Uploading", "Rendering"],
+    "correctIndex": 0
+  },
+  {
+    "text": "Struktur kontrol yang mengulang suatu proses disebut?",
+    "options": ["Perulangan (loop)", "Percabangan", "Variabel", "Fungsi"],
+    "correctIndex": 0
+  },
+  {
+    "text": "Struktur kontrol yang memilih jalur berdasarkan kondisi tertentu disebut?",
+    "options": ["Percabangan (if-else)", "Perulangan", "Array", "Konstanta"],
+    "correctIndex": 0
+  },
+  {
+    "text": "Tempat menyimpan data yang nilainya bisa berubah selama program berjalan disebut?",
+    "options": ["Variabel", "Fungsi", "Kelas", "Modul"],
+    "correctIndex": 0
+  },
+  {
+    "text": "Kumpulan instruksi yang diberi nama dan bisa dipanggil ulang disebut?",
+    "options": ["Fungsi", "Variabel", "Loop", "Tag"],
+    "correctIndex": 0
+  },
+  {
+    "text": "Berpikir komputasional TIDAK mencakup elemen berikut ini, yaitu?",
+    "options": ["Menghafal jawaban tanpa memahami", "Dekomposisi", "Abstraksi", "Pengenalan pola"],
+    "correctIndex": 0
+  },
+  {
+    "text": "Susunan data yang menyimpan banyak nilai sekaligus dalam satu wadah disebut?",
+    "options": ["Array/List", "Fungsi", "Komentar", "Loop"],
+    "correctIndex": 0
+  },
+  {
+    "text": "Sebuah resep masakan adalah contoh sehari-hari dari konsep?",
+    "options": ["Algoritma", "Database", "Enkripsi", "Kompilasi"],
+    "correctIndex": 0
+  },
+  {
+    "text": "Jika ingin membuat robot menari, langkah pertama berpikir komputasional yang tepat adalah?",
+    "options": ["Memecah gerakan tari jadi langkah-langkah kecil", "Langsung menyalakan robot", "Menebak gerakan secara acak", "Membeli robot baru"],
+    "correctIndex": 0
+  },
+  {
+    "text": "Peta jalur bus yang hanya menampilkan halte penting (bukan semua detail jalan) adalah contoh?",
+    "options": ["Abstraksi", "Dekomposisi", "Rekursi", "Enkripsi"],
+    "correctIndex": 0
+  },
+  {
+    "text": "Mengapa pengenalan pola berguna dalam pemrograman?",
+    "options": ["Karena kode yang mirip bisa digunakan ulang", "Karena membuat program lebih lambat", "Karena menghapus kebutuhan logika", "Karena mengganti perlunya algoritma"],
+    "correctIndex": 0
+  }
+]
