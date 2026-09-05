@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Layar Host — Jalur Pikir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0e2438;
+    --bg-panel:#153552;
+    --bg-panel-light:#1c4266;
+    --line:#2c5478;
+    --text:#eef4fa;
+    --muted:#8fa8c2;
+    --gold:#ffb703;
+    --good:#3ddc97;
+    --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; background:var(--bg-deep); color:var(--text);
+    font-family:'Inter',sans-serif;
+    background-image: radial-gradient(circle at 15% 10%, #123049 0%, var(--bg-deep) 55%);
+  }
+  h1,h2,h3{ font-family:'Baloo 2',sans-serif; margin:0; }
+
+  /* --- Setup / lobby screen --- */
+  #setup{
+    max-width:520px; margin:8vh auto; padding:36px;
+    background:var(--bg-panel); border-radius:20px; border:1px solid var(--line);
+    text-align:center;
+  }
+  #setup h1{ font-size:1.9rem; color:var(--gold); }
+  #setup p{ color:var(--muted); line-height:1.5; }
+  #setup select, #setup button{
+    font-family:inherit; font-size:1rem; padding:12px 18px; border-radius:12px; border:none;
+    margin-top:14px; cursor:pointer;
+  }
+  #setup select{ background:var(--bg-panel-light); color:var(--text); border:1px solid var(--line); width:100%; }
+  #setup button{ background:var(--gold); color:#22160a; font-weight:700; width:100%; }
+
+  /* --- Main game layout --- */
+  #game{ display:none; padding:20px; max-width:1400px; margin:0 auto; }
+  .topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
+  .room-code{ background:var(--bg-panel); border:1px solid var(--line); border-radius:14px; padding:10px 20px; }
+  .room-code span{ color:var(--muted); font-size:0.85rem; }
+  .room-code strong{ display:block; font-size:1.8rem; letter-spacing:4px; color:var(--gold); font-family:'Baloo 2'; }
+  #startBtn{
+    background:var(--gold); color:#22160a; border:none; font-weight:700; font-family:'Baloo 2';
+    font-size:1.1rem; padding:14px 30px; border-radius:14px; cursor:pointer;
+  }
+  #startBtn:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  .layout{ display:grid; grid-template-columns:1fr 300px; gap:20px; }
+  @media (max-width:900px){ .layout{ grid-template-columns:1fr; } }
+
+  #boardWrap{ background:var(--bg-panel); border-radius:20px; border:1px solid var(--line); padding:20px; overflow:auto; }
+  #turnBanner{ text-align:center; margin-bottom:14px; font-family:'Baloo 2'; font-size:1.2rem; }
+  #turnBanner .dot{ display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:8px; vertical-align:middle;}
+
+  .track{ position:relative; }
+  .tile{
+    position:absolute; width:52px; height:52px; border-radius:10px;
+    background:var(--bg-panel-light); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.7rem; color:var(--muted);
+  }
+  .tile.finish{ background:linear-gradient(135deg,#ffb703,#fb8500); color:#22160a; font-weight:700; }
+  .pawn{
+    position:absolute; width:26px; height:26px; border-radius:50%;
+    border:3px solid #0e2438; box-shadow:0 3px 8px rgba(0,0,0,0.4);
+    transition: left 0.6s ease, top 0.6s ease;
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.7rem; font-weight:700; color:#0e2438;
+  }
+
+  #scoreboard{ background:var(--bg-panel); border-radius:20px; border:1px solid var(--line); padding:18px; }
+  #scoreboard h3{ margin-bottom:12px; }
+  .team-row{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); }
+  .team-row:last-child{ border-bottom:none; }
+  .swatch{ width:16px; height:16px; border-radius:4px; flex-shrink:0; }
+  .team-row .name{ flex:1; font-weight:600; font-size:0.92rem; }
+  .team-row .score{ color:var(--gold); font-weight:700; font-family:'Baloo 2'; }
+  .team-row.finished{ opacity:0.6; }
+
+  /* --- Question overlay --- */
+  #questionOverlay{
+    display:none; position:fixed; inset:0; background:rgba(9,20,32,0.92);
+    align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  #qCard{
+    background:var(--bg-panel); border-radius:22px; border:1px solid var(--line);
+    max-width:720px; width:100%; padding:36px; text-align:center;
+  }
+  #qTeamLabel{ color:var(--gold); font-family:'Baloo 2'; font-size:1.1rem; margin-bottom:6px; }
+  #qText{ font-size:1.5rem; margin:14px 0 22px; line-height:1.4; }
+  #qOptions{ display:grid; grid-template-columns:1fr 1fr; gap:12px; text-align:left; }
+  .qopt{ background:var(--bg-panel-light); border:1px solid var(--line); border-radius:12px; padding:14px 16px; font-size:1.05rem; }
+  .qopt.correct{ background:rgba(61,220,151,0.18); border-color:var(--good); }
+  #qTimer{ font-family:'Baloo 2'; font-size:2.2rem; color:var(--gold); margin-bottom:10px; }
+  #resultBanner{ font-family:'Baloo 2'; font-size:1.3rem; margin-top:16px; min-height:1.6em; }
+  #resultBanner.good{ color:var(--good); }
+  #resultBanner.bad{ color:var(--bad); }
+  #continueBtn{ display:none; margin-top:18px; background:var(--gold); color:#22160a; border:none; font-weight:700; font-family:'Baloo 2'; font-size:1.05rem; padding:12px 26px; border-radius:12px; cursor:pointer; }
+
+  #winScreen{ display:none; text-align:center; padding:60px 20px; }
+  #winScreen h1{ font-size:2.4rem; color:var(--gold); }
+</style>
+</head>
+<body>
+
+<div id="setup">
+  <h1>🎲 Jalur Pikir</h1>
+  <p>Buat room, bagikan kode ke pemain, lalu mulai permainan. Setiap kelompok gantian menjawab — makin cepat &amp; tepat, makin jauh melangkah.</p>
+  <label style="display:block; text-align:left; margin-top:18px; color:var(--muted); font-size:0.85rem;">Jumlah kelompok</label>
+  <select id="numTeams">
+    <option value="2">2 kelompok</option>
+    <option value="3">3 kelompok</option>
+    <option value="4">4 kelompok</option>
+    <option value="5" selected>5 kelompok</option>
+    <option value="6">6 kelompok</option>
+    <option value="7">7 kelompok</option>
+    <option value="8">8 kelompok</option>
+  </select>
+  <button id="createBtn">Buat Room</button>
+</div>
+
+<div id="game">
+  <div class="topbar">
+    <div class="room-code">
+      <span>Kode room untuk pemain</span>
+      <strong id="codeDisplay">----</strong>
+    </div>
+    <button id="startBtn" disabled>⚡ Mulai Soal</button>
+  </div>
+
+  <div id="turnBanner">Menunggu pemain bergabung…</div>
+
+  <div class="layout">
+    <div id="boardWrap">
+      <div class="track" id="track"></div>
+    </div>
+    <div id="scoreboard">
+      <h3>Papan Skor</h3>
+      <div id="teamList"></div>
+    </div>
+  </div>
+</div>
+
+<div id="questionOverlay">
+  <div id="qCard">
+    <div id="qTeamLabel"></div>
+    <div id="qTimer">60</div>
+    <div id="qText"></div>
+    <div id="qOptions"></div>
+    <div id="resultBanner"></div>
+    <button id="continueBtn">Lanjut ➜</button>
+  </div>
+</div>
+
+<div id="winScreen">
+  <h1 id="winText"></h1>
+  <p style="color:var(--muted)">Terima kasih sudah bermain!</p>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let roomCode = null;
+let trackLength = 32;
+let countdownTimer = null;
+
+const COLS = 8;
+const TILE = 60;
+
+document.getElementById('createBtn').onclick = () => {
+  const n = document.getElementById('numTeams').value;
+  socket.emit('host:create', Number(n), ({ code }) => {
+    roomCode = code;
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('game').style.display = 'block';
+    document.getElementById('codeDisplay').textContent = code;
+  });
+};
+
+document.getElementById('startBtn').onclick = () => {
+  socket.emit('host:startQuestion', roomCode);
+};
+
+document.getElementById('continueBtn').onclick = () => {
+  document.getElementById('questionOverlay').style.display = 'none';
+  socket.emit('host:continue', roomCode);
+};
+
+function tilePos(i){
+  const row = Math.floor(i / COLS);
+  const colInRow = i % COLS;
+  const col = row % 2 === 0 ? colInRow : COLS - 1 - colInRow;
+  return { x: col * TILE + 10, y: row * TILE + 10 };
+}
+
+function buildTrack(){
+  const track = document.getElementById('track');
+  track.innerHTML = '';
+  const rows = Math.ceil(trackLength / COLS);
+  track.style.width = (COLS * TILE + 20) + 'px';
+  track.style.height = (rows * TILE + 20) + 'px';
+  for (let i = 0; i < trackLength; i++){
+    const { x, y } = tilePos(i);
+    const tile = document.createElement('div');
+    tile.className = 'tile' + (i === trackLength - 1 ? ' finish' : '');
+    tile.style.left = x + 'px';
+    tile.style.top = y + 'px';
+    tile.textContent = i === trackLength - 1 ? 'FINISH' : (i === 0 ? 'START' : '');
+    track.appendChild(tile);
+  }
+}
+
+function renderTeams(state){
+  const list = document.getElementById('teamList');
+  list.innerHTML = '';
+  state.teams.forEach((t, idx) => {
+    const row = document.createElement('div');
+    row.className = 'team-row' + (t.finished ? ' finished' : '');
+    row.innerHTML = `
+      <div class="swatch" style="background:${t.color}"></div>
+      <div class="name">${t.name} ${idx === state.currentTeamIndex && state.phase !== 'finished' ? '👉' : ''}<br>
+        <span style="color:var(--muted); font-weight:400; font-size:0.78rem;">${t.players.length} pemain</span>
+      </div>
+      <div class="score">${t.score}</div>
+    `;
+    list.appendChild(row);
+  });
+
+  // pawns
+  document.querySelectorAll('.pawn').forEach(p => p.remove());
+  const track = document.getElementById('track');
+  state.teams.forEach((t, idx) => {
+    const { x, y } = tilePos(t.position);
+    const pawn = document.createElement('div');
+    pawn.className = 'pawn';
+    pawn.style.background = t.color;
+    pawn.style.left = (x + 4 + (idx % 4) * 6) + 'px';
+    pawn.style.top = (y + 4 + Math.floor(idx / 4) * 6) + 'px';
+    pawn.textContent = idx + 1;
+    track.appendChild(pawn);
+  });
+
+  const banner = document.getElementById('turnBanner');
+  if (state.phase === 'finished') {
+    banner.textContent = '🏁 Permainan selesai!';
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('winScreen').style.display = 'block';
+    document.getElementById('game').style.display = 'none';
+    document.getElementById('winText').textContent = `🏆 ${state.winner} juara pertama!`;
+  } else {
+    const current = state.teams[state.currentTeamIndex];
+    banner.innerHTML = `<span class="dot" style="background:${current.color}"></span> Giliran: <strong>${current.name}</strong>`;
+    document.getElementById('startBtn').disabled = state.phase === 'question';
+  }
+}
+
+socket.on('room:update', (state) => {
+  trackLength = state.trackLength;
+  if (document.getElementById('track').children.length === 0) buildTrack();
+  renderTeams(state);
+});
+
+socket.on('question:show', (q) => {
+  document.getElementById('questionOverlay').style.display = 'flex';
+  document.getElementById('continueBtn').style.display = 'none';
+  document.getElementById('resultBanner').textContent = '';
+  document.getElementById('resultBanner').className = '';
+  document.getElementById('qTeamLabel').textContent = `Giliran ${q.teamName}`;
+  document.getElementById('qText').textContent = q.text;
+  const opts = document.getElementById('qOptions');
+  opts.innerHTML = '';
+  q.options.forEach((o) => {
+    const div = document.createElement('div');
+    div.className = 'qopt';
+    div.textContent = o;
+    opts.appendChild(div);
+  });
+
+  let remaining = q.duration;
+  document.getElementById('qTimer').textContent = remaining;
+  clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    remaining -= 1;
+    document.getElementById('qTimer').textContent = Math.max(remaining, 0);
+    if (remaining <= 0) clearInterval(countdownTimer);
+  }, 1000);
+});
+
+socket.on('turn:result', (r) => {
+  clearInterval(countdownTimer);
+  const opts = document.querySelectorAll('.qopt');
+  if (opts[r.correctIndex]) opts[r.correctIndex].classList.add('correct');
+  const banner = document.getElementById('resultBanner');
+  banner.textContent = r.correct
+    ? `✅ Benar! ${r.teamName} melangkah ${r.steps} langkah.`
+    : `❌ Salah / waktu habis. ${r.teamName} tetap di tempat.`;
+  banner.className = r.correct ? 'good' : 'bad';
+  document.getElementById('continueBtn').style.display = 'inline-block';
+});
+
+socket.on('room:closed', () => {
+  alert('Room ditutup.');
+});
+</script>
+</body>
+</html>

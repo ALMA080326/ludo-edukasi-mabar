@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Jalur Pikir — Pemain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0e2438;
+    --bg-panel:#153552;
+    --bg-panel-light:#1c4266;
+    --line:#2c5478;
+    --text:#eef4fa;
+    --muted:#8fa8c2;
+    --gold:#ffb703;
+    --good:#3ddc97;
+    --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; background:var(--bg-deep); color:var(--text);
+    font-family:'Inter',sans-serif; display:flex; flex-direction:column;
+  }
+  h1,h2,h3{ font-family:'Baloo 2',sans-serif; margin:0; }
+  .screen{ flex:1; display:none; flex-direction:column; padding:22px; max-width:480px; margin:0 auto; width:100%; }
+  .screen.active{ display:flex; }
+
+  /* Join screen */
+  #joinScreen h1{ font-size:1.6rem; color:var(--gold); text-align:center; margin-bottom:4px; }
+  #joinScreen p.sub{ color:var(--muted); text-align:center; margin-bottom:24px; font-size:0.9rem; }
+  label{ font-size:0.82rem; color:var(--muted); margin-bottom:6px; display:block; }
+  input, select{
+    width:100%; padding:14px 16px; border-radius:12px; border:1px solid var(--line);
+    background:var(--bg-panel-light); color:var(--text); font-size:1rem; font-family:inherit;
+    margin-bottom:18px;
+  }
+  #teamGrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+  .teamOpt{
+    border:2px solid var(--line); border-radius:12px; padding:12px; text-align:center;
+    cursor:pointer; font-weight:600; font-size:0.9rem; background:var(--bg-panel-light);
+  }
+  .teamOpt.selected{ border-color:var(--gold); box-shadow:0 0 0 2px rgba(255,183,3,0.3); }
+  #joinBtn{
+    background:var(--gold); color:#22160a; border:none; font-weight:700; font-family:'Baloo 2';
+    font-size:1.1rem; padding:16px; border-radius:14px; cursor:pointer;
+  }
+  #joinError{ color:var(--bad); text-align:center; margin-top:10px; min-height:1.4em; font-size:0.88rem; }
+
+  /* Waiting / status screen */
+  #waitScreen{ align-items:center; justify-content:center; text-align:center; }
+  #myTeamBadge{ padding:10px 22px; border-radius:999px; font-weight:700; font-family:'Baloo 2'; margin-bottom:16px; }
+  #waitText{ color:var(--muted); line-height:1.5; }
+  .pulse{ animation:pulse 1.6s infinite ease-in-out; }
+  @keyframes pulse{ 0%,100%{opacity:0.5} 50%{opacity:1} }
+
+  /* Question screen */
+  #qTeamLabel{ text-align:center; font-family:'Baloo 2'; color:var(--gold); margin-bottom:6px; }
+  #qTimerBar{ height:8px; background:var(--bg-panel-light); border-radius:4px; overflow:hidden; margin-bottom:18px; }
+  #qTimerFill{ height:100%; background:var(--gold); width:100%; transition:width 1s linear; }
+  #qText{ font-size:1.25rem; text-align:center; margin-bottom:22px; line-height:1.4; }
+  .ansBtn{
+    width:100%; padding:18px; margin-bottom:12px; border-radius:14px; border:1px solid var(--line);
+    background:var(--bg-panel-light); color:var(--text); font-size:1.05rem; text-align:left;
+    cursor:pointer; font-family:inherit;
+  }
+  .ansBtn:active{ transform:scale(0.98); }
+  .ansBtn.chosen{ border-color:var(--gold); background:rgba(255,183,3,0.15); }
+  .ansBtn:disabled{ opacity:0.6; }
+
+  /* Result screen */
+  #resultScreen{ align-items:center; justify-content:center; text-align:center; }
+  #resultIcon{ font-size:3rem; margin-bottom:10px; }
+  #resultText{ font-size:1.3rem; font-family:'Baloo 2'; }
+</style>
+</head>
+<body>
+
+<div class="screen active" id="joinScreen">
+  <h1>🎲 Jalur Pikir</h1>
+  <p class="sub">Masukkan kode room dari layar utama, lalu pilih kelompokmu.</p>
+
+  <label>Kode Room</label>
+  <input id="codeInput" inputmode="numeric" maxlength="4" placeholder="1234" />
+
+  <label>Nama Kamu</label>
+  <input id="nameInput" maxlength="20" placeholder="cth. Dinda" />
+
+  <label>Pilih Kelompok</label>
+  <div id="teamGrid"></div>
+
+  <button id="joinBtn">Gabung</button>
+  <div id="joinError"></div>
+</div>
+
+<div class="screen" id="waitScreen">
+  <div id="myTeamBadge"></div>
+  <h2 id="waitTitle">Menunggu permainan dimulai…</h2>
+  <p id="waitText" class="pulse">Perhatikan layar utama untuk giliran kelompokmu.</p>
+</div>
+
+<div class="screen" id="questionScreen">
+  <div id="qTeamLabel"></div>
+  <div id="qTimerBar"><div id="qTimerFill"></div></div>
+  <div id="qText"></div>
+  <div id="qOptions"></div>
+</div>
+
+<div class="screen" id="resultScreen">
+  <div id="resultIcon"></div>
+  <div id="resultText"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let roomCode = null;
+let myTeamIndex = null;
+let myColor = null;
+let hasAnswered = false;
+let timerInterval = null;
+
+const teamGrid = document.getElementById('teamGrid');
+for (let i = 0; i < 5; i++) {
+  const div = document.createElement('div');
+  div.className = 'teamOpt';
+  div.textContent = `Kelompok ${i + 1}`;
+  div.dataset.index = i;
+  div.onclick = () => {
+    document.querySelectorAll('.teamOpt').forEach(t => t.classList.remove('selected'));
+    div.classList.add('selected');
+  };
+  teamGrid.appendChild(div);
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+document.getElementById('joinBtn').onclick = () => {
+  const code = document.getElementById('codeInput').value.trim();
+  const name = document.getElementById('nameInput').value.trim();
+  const selected = document.querySelector('.teamOpt.selected');
+  const errorEl = document.getElementById('joinError');
+  errorEl.textContent = '';
+
+  if (!code || code.length !== 4) { errorEl.textContent = 'Masukkan kode room 4 digit.'; return; }
+  if (!name) { errorEl.textContent = 'Isi nama kamu dulu.'; return; }
+  if (!selected) { errorEl.textContent = 'Pilih kelompok dulu.'; return; }
+
+  socket.emit('player:join', { code, name, teamIndex: Number(selected.dataset.index) }, (res) => {
+    if (res.error) { errorEl.textContent = res.error; return; }
+    roomCode = code;
+    myTeamIndex = res.teamIndex;
+    myColor = res.color;
+    const badge = document.getElementById('myTeamBadge');
+    badge.textContent = res.teamName;
+    badge.style.background = myColor;
+    badge.style.color = '#0e2438';
+    showScreen('waitScreen');
+  });
+};
+
+socket.on('room:update', (state) => {
+  if (myTeamIndex === null) return;
+  if (state.phase === 'finished') {
+    document.getElementById('waitTitle').textContent = '🏁 Permainan selesai!';
+    document.getElementById('waitText').textContent = `Juara: ${state.winner}`;
+    document.getElementById('waitText').classList.remove('pulse');
+    showScreen('waitScreen');
+    return;
+  }
+  if (state.phase === 'lobby' || state.phase === 'reveal') {
+    const current = state.teams[state.currentTeamIndex];
+    if (document.getElementById('questionScreen').classList.contains('active') === false &&
+        document.getElementById('resultScreen').classList.contains('active') === false) {
+      document.getElementById('waitTitle').textContent =
+        state.currentTeamIndex === myTeamIndex
+          ? 'Bersiap! Giliranmu sebentar lagi.'
+          : `Giliran ${current.name} menjawab…`;
+      showScreen('waitScreen');
+    }
+  }
+});
+
+socket.on('question:show', (q) => {
+  hasAnswered = false;
+  if (q.teamIndex !== myTeamIndex) {
+    document.getElementById('waitTitle').textContent = `Giliran ${q.teamName} menjawab…`;
+    document.getElementById('waitText').textContent = 'Bersiap untuk giliranmu berikutnya.';
+    showScreen('waitScreen');
+    return;
+  }
+
+  document.getElementById('qTeamLabel').textContent = 'Giliranmu! Jawab secepat mungkin';
+  document.getElementById('qText').textContent = q.text;
+  const opts = document.getElementById('qOptions');
+  opts.innerHTML = '';
+  q.options.forEach((o, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'ansBtn';
+    btn.textContent = o;
+    btn.onclick = () => {
+      if (hasAnswered) return;
+      hasAnswered = true;
+      document.querySelectorAll('.ansBtn').forEach(b => b.disabled = true);
+      btn.classList.add('chosen');
+      socket.emit('player:answer', { code: roomCode, choiceIndex: idx });
+    };
+    opts.appendChild(btn);
+  });
+  showScreen('questionScreen');
+
+  let remaining = q.duration;
+  const fill = document.getElementById('qTimerFill');
+  fill.style.width = '100%';
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    remaining -= 1;
+    fill.style.width = Math.max((remaining / q.duration) * 100, 0) + '%';
+    if (remaining <= 0) clearInterval(timerInterval);
+  }, 1000);
+});
+
+socket.on('turn:result', (r) => {
+  clearInterval(timerInterval);
+  if (r.teamIndex !== myTeamIndex) return;
+  const icon = document.getElementById('resultIcon');
+  const text = document.getElementById('resultText');
+  if (r.correct) {
+    icon.textContent = '✅';
+    text.textContent = `Benar! Maju ${r.steps} langkah.`;
+    text.style.color = 'var(--good)';
+  } else {
+    icon.textContent = '❌';
+    text.textContent = 'Kurang tepat / waktu habis. Tetap di tempat.';
+    text.style.color = 'var(--bad)';
+  }
+  showScreen('resultScreen');
+  setTimeout(() => showScreen('waitScreen'), 2500);
+});
+
+socket.on('room:closed', () => {
+  alert('Room telah ditutup oleh host.');
+  location.reload();
+});
+</script>
+</body>
+</html>
